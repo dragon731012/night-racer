@@ -155,7 +155,7 @@ headlight2.target = headlight2target;
 car.add(headlight1);
 car.add(headlight2);
 
-loader.load('assets/dirt.glb', (gltf) => {
+loader.load('assets/dirt2.glb', (gltf) => {
     const model = gltf.scene;
     model.rotation.y=Math.PI*3;
     scene.add(model);
