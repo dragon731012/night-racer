@@ -161,9 +161,12 @@ loader.load('assets/dirt.glb', (gltf) => {
     scene.add(model);
     model.updateMatrixWorld(true);
 
+    const included = ["_ground","_road","_dirt","_rock","_mud","_cliff","_fence","_terrain","_puddle","_trunk"];
     model.traverse((child) => {
-        if (child.isMesh) {
+        if (child.isMesh && included.some(item => child.name.toLowerCase().includes(item.toLowerCase()))) {
             PhysicsManager.addTrimesh(child,0,0.99);
+        } else {
+            //console.log(child.name);
         }
     });
 });
@@ -179,37 +182,42 @@ function animate(time) {
     let hit = world.castRay(ray, 2.0, true);
     let wantedy=0.5;
     if (hit) {
-        if (hit.timeOfImpact<.3) {
+        const rot = carbody.rotation();
+        const quat = new THREE.Quaternion(rot.x, rot.y, rot.z, rot.w);
+        const upv = new THREE.Vector3(0, 1, 0).applyQuaternion(quat);
+
+        if (upv.y > 0.9) {
             let compression = wantedy - hit.timeOfImpact - 0.2;
             if (compression>0) {
                 let susimp = (compression*8000)-(carbody.linvel().y*300);
                 carbody.applyImpulse({ x: 0, y: susimp, z: 0 }, true);
                 //PhysicsManager.applyRelativeImpulse(carbody, {x: 0, y: susimp, z: 0});
             }
-        
-            let localvelocity = PhysicsManager.getRelativeLinvel(carbody);
 
-            let mass = 1500;
-            let sideimp = -localvelocity.x * mass * 0.15;
-            
-            let maxspeed = 40;
-            let acceleration = 3;
-            let targetforwardimp = (maxspeed - Math.abs(localvelocity.z)) * acceleration;
-            let forwardimp = 0;
+            if (hit.timeOfImpact<.3){
+                let localvelocity = PhysicsManager.getRelativeLinvel(carbody);
+                let mass = 1500;
+                let sideimp = -localvelocity.x * mass * 0.15;
+                
+                let maxspeed = 40;
+                let acceleration = 3;
+                let targetforwardimp = (maxspeed - Math.abs(localvelocity.z)) * acceleration;
+                let forwardimp = 0;
 
-            if (keys["w"]) forwardimp = targetforwardimp;
-            if (keys["s"]) forwardimp = -targetforwardimp * 0.5;
+                if (keys["w"]) forwardimp = targetforwardimp;
+                if (keys["s"]) forwardimp = -targetforwardimp * 0.5;
 
-            PhysicsManager.applyRelativeImpulse(carbody, {x: sideimp, y: 0, z: -forwardimp});
+                PhysicsManager.applyRelativeImpulse(carbody, {x: sideimp, y: 0, z: -forwardimp});
 
-            let turn = 0;
-            if (keys["a"]) turn = -1;
-            if (keys["d"]) turn = 1;
-            if (forwardimp<0) turn = turn * -1;
-            let currentspeed = Math.abs(localvelocity.z);
-            let turnimp = Math.min(1.0, currentspeed / 30)*turn*150;
-            carbody.applyTorqueImpulse({ x: 0, y: -turnimp, z: 0}, true);
-            carbody.setAngvel({ x: carbody.angvel().x, y: carbody.angvel().y * 0.95, z: carbody.angvel().z }, true);
+                let turn = 0;
+                if (keys["a"]) turn = -1;
+                if (keys["d"]) turn = 1;
+                if (PhysicsManager.getRelativeLinvel(carbody).z>0) turn = turn * -1;
+                let currentspeed = Math.abs(localvelocity.z);
+                let turnimp = Math.min(1.0, currentspeed / 30)*turn*150;
+                carbody.applyTorqueImpulse({ x: 0, y: -turnimp, z: 0}, true);
+                carbody.setAngvel({ x: carbody.angvel().x, y: carbody.angvel().y * 0.95, z: carbody.angvel().z }, true);
+            }
         }
     }
 
