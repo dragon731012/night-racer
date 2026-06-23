@@ -6,6 +6,14 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 await RAPIER.init();
 const world = new RAPIER.World({ x: 0.0, y: -9.81, z: 0.0 });
 
+const susheight = 1.0;
+const susstrength = 8000;
+const susslower = 1000;
+const stiff = 6000;
+const grip = 6;
+
+let currentsteer = 0;
+
 let meshes=[];
 // AI assisted with the physics manager except the mesh updater
 const PhysicsManager = {
@@ -16,8 +24,11 @@ const PhysicsManager = {
         mesh.getWorldPosition(position);
         mesh.getWorldQuaternion(quaternion);
 
-        const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
-            .setTranslation(position.x, position.y, position.z)
+        const bodyDesc = mass === 0 
+            ? RAPIER.RigidBodyDesc.fixed() 
+            : RAPIER.RigidBodyDesc.dynamic();
+            
+        bodyDesc.setTranslation(position.x, position.y, position.z)
             .setRotation(quaternion);
         const body = world.createRigidBody(bodyDesc);
 
@@ -28,9 +39,15 @@ const PhysicsManager = {
         mesh.getWorldScale(scale);
         size.multiply(scale);
 
+        const volume = size.x * size.y * size.z;
+        const density = mass > 0 ? (mass / volume) : 0;
+
         const colliderDesc = RAPIER.ColliderDesc.cuboid(size.x / 2, size.y / 2, size.z / 2)
-            .setFriction(friction)
-            .setDensity(mass);
+            .setFriction(friction);
+            
+        if (mass > 0) {
+            colliderDesc.setDensity(density);
+        }
         
         world.createCollider(colliderDesc, body);
         mesh.userData.physicsBody = body;
@@ -89,7 +106,7 @@ const PhysicsManager = {
 const loader = new GLTFLoader();
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x000000, 0.05);
+//scene.fog = new THREE.FogExp2(0x000000, 0.05);
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
 const controls = new PointerLockControls(camera, document.body);
@@ -121,9 +138,13 @@ scene.add(sky);
 const ambient = new THREE.AmbientLight(0xffffff, 0.005);
 scene.add(ambient);
 
-const car = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({color: 0x6e6e6e}));
-car.position.set(0, 0, 5);
-let carbody = PhysicsManager.addBox(car, 1500, 0.99);
+const car = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.8, 2), new THREE.MeshStandardMaterial({color: 0x6e6e6e}));
+//car.geometry.translate(0, -0.5, 0); 
+//car.position.set(1, 0, 5);
+car.position.set(5, -5, 5);
+let carbody = PhysicsManager.addBox(car, 800, 0.99);
+carbody.setLinearDamping(0.1);
+carbody.setAngularDamping(0.5);
 car.castShadow = true;
 car.receiveShadow = true;
 scene.add(car);
@@ -155,16 +176,19 @@ headlight2.target = headlight2target;
 car.add(headlight1);
 car.add(headlight2);
 
-loader.load('assets/dirt2.glb', (gltf) => {
+loader.load('assets/track.glb', (gltf) => {
     const model = gltf.scene;
     model.rotation.y=Math.PI*3;
     scene.add(model);
     model.updateMatrixWorld(true);
 
-    const included = ["_ground","_road","_dirt","_rock","_mud","_cliff","_fence","_terrain","_puddle","_trunk"];
+    //const included = ["_ground","_road","_dirt","_rock","_mud","_cliff","_fence","_terrain","_puddle","_trunk"];
+    const included = ["ALL"];
     model.traverse((child) => {
-        if (child.isMesh && included.some(item => child.name.toLowerCase().includes(item.toLowerCase()))) {
-            PhysicsManager.addTrimesh(child,0,0.99);
+        if (child.isMesh && included.some(item => child.name.toLowerCase().includes(item.toLowerCase())) || included[0] == "ALL") {
+            try {
+                PhysicsManager.addTrimesh(child,0,0.99);
+            } catch (e) {}
         } else {
             //console.log(child.name);
         }
@@ -175,50 +199,96 @@ car.add(camera);
 camera.position.set(0, -0.05, 0.5);
 
 function animate(time) {
-    let carpos = carbody.translation();
-    let rayorigin = { x: carpos.x, y: carpos.y - 0.6, z: carpos.z };
-    let raydirection = { x: 0, y: -1, z: 0 };
-    let ray = new RAPIER.Ray(rayorigin, raydirection);
-    let hit = world.castRay(ray, 2.0, true);
-    let wantedy=0.5;
-    if (hit) {
-        const rot = carbody.rotation();
-        const quat = new THREE.Quaternion(rot.x, rot.y, rot.z, rot.w);
-        const upv = new THREE.Vector3(0, 1, 0).applyQuaternion(quat);
+    carbody.resetForces(true);
 
-        if (upv.y > 0.9) {
-            let compression = wantedy - hit.timeOfImpact - 0.2;
-            if (compression>0) {
-                let susimp = (compression*8000)-(carbody.linvel().y*300);
-                carbody.applyImpulse({ x: 0, y: susimp, z: 0 }, true);
-                //PhysicsManager.applyRelativeImpulse(carbody, {x: 0, y: susimp, z: 0});
-            }
+    const rot = carbody.rotation();
+    const quat = new THREE.Quaternion(rot.x, rot.y, rot.z, rot.w);
+    const worldup = new THREE.Vector3(0, 1, 0);
+    const worlddown = new THREE.Vector3(0, -1, 0);
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(quat);
 
-            if (hit.timeOfImpact<.3){
-                let localvelocity = PhysicsManager.getRelativeLinvel(carbody);
-                let mass = 1500;
-                let sideimp = -localvelocity.x * mass * 0.15;
-                
-                let maxspeed = 40;
-                let acceleration = 3;
-                let targetforwardimp = (maxspeed - Math.abs(localvelocity.z)) * acceleration;
-                let forwardimp = 0;
+    const wheelxoffset = 1;
+    const wheelzoffset = 1.5;
+    let onground = false;
+    let usesus = (up.dot(worldup) > 0.5);
 
-                if (keys["w"]) forwardimp = targetforwardimp;
-                if (keys["s"]) forwardimp = -targetforwardimp * 0.5;
+    let carvel = carbody.linvel();
+    let speed = Math.sqrt(carvel.x * carvel.x + carvel.y * carvel.y + carvel.z * carvel.z);
+    let maxsteer = Math.max(0.15, 0.8 * (1.0 - speed / 50));
 
-                PhysicsManager.applyRelativeImpulse(carbody, {x: sideimp, y: 0, z: -forwardimp});
+    let targetsteer = 0;
+    if (keys["a"]) targetsteer = maxsteer;
+    if (keys["d"]) targetsteer = -maxsteer;
+    currentsteer += (targetsteer - currentsteer) * 0.1;
 
-                let turn = 0;
-                if (keys["a"]) turn = -1;
-                if (keys["d"]) turn = 1;
-                if (PhysicsManager.getRelativeLinvel(carbody).z>0) turn = turn * -1;
-                let currentspeed = Math.abs(localvelocity.z);
-                let turnimp = Math.min(1.0, currentspeed / 30)*turn*150;
-                carbody.applyTorqueImpulse({ x: 0, y: -turnimp, z: 0}, true);
-                carbody.setAngvel({ x: carbody.angvel().x, y: carbody.angvel().y * 0.95, z: carbody.angvel().z }, true);
+    // ai assisted with some of the complex math and physics
+    for (let i=0;i<4;i++) {
+        let carpos = carbody.translation();
+        // dont mind this line lol
+        let wheelpos = new THREE.Vector3((i % 2) ? wheelxoffset : -wheelxoffset, -0.5, (i > 1) ? wheelzoffset : -wheelzoffset).applyQuaternion(quat).add(carpos);
+
+        let localdown = new THREE.Vector3(0, -1, 0).applyQuaternion(quat);
+        let ray = new RAPIER.Ray(wheelpos, worlddown);
+        let hit = world.castRay(ray, susheight, false, null, null, null, carbody);
+
+        let steerangle = 0;
+        if (i<2) steerangle = currentsteer;
+
+        if (hit && usesus) {
+            onground = true;
+            let compression = 1.0 - (hit.timeOfImpact / susheight);
+            if (compression>0) {                
+                let wheelvel = carbody.velocityAtPoint(wheelpos);
+                let threewheelvel = new THREE.Vector3(wheelvel.x, wheelvel.y, wheelvel.z);
+                let compressspeed = threewheelvel.dot(up);
+
+                // calc suspension force and apply it
+                let springforce = compression*susstrength;
+                if (compression > 0.7) {
+                    let excesscompression = compression - 0.7;
+                    springforce += excesscompression * susstrength * 4.0;
+                }
+                let susimp = Math.max(0,springforce-(compressspeed*susslower));
+                let susvec = up.clone().multiplyScalar(susimp);
+                carbody.addForceAtPoint({x: susvec.x, y: susvec.y, z: susvec.z}, wheelpos, true);
+
+                // calc steering
+                let localthreewheelvel = threewheelvel.clone().applyQuaternion(quat.clone().invert());
+                if (i<2) {
+                    let steerquatr = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), steerangle);
+                    localthreewheelvel.applyQuaternion(steerquatr.clone().invert());
+                }
+                let side = -localthreewheelvel.x * stiff;
+                let maxfriction = susimp * grip;
+                let wheelsideforce = Math.max(-maxfriction, Math.min(maxfriction, side));
+                let localsideforcevec = new THREE.Vector3(wheelsideforce, 0, 0);
+                if (i<2) {
+                    let steerquatr = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), steerangle);
+                    localsideforcevec.applyQuaternion(steerquatr);
+                }
+                let sideforce = localsideforcevec.applyQuaternion(quat);
+                let forcepos = new THREE.Vector3((i % 2) ? wheelxoffset : -wheelxoffset, 0, (i > 1) ? wheelzoffset : -wheelzoffset).applyQuaternion(quat).add(carpos);
+                carbody.addForceAtPoint({ x: sideforce.x, y: sideforce.y, z: sideforce.z }, forcepos, true);
             }
         }
+    }
+        
+           
+    if (onground) {
+        let localvelocity = PhysicsManager.getRelativeLinvel(carbody);
+        
+        let maxspeed = 40;
+        let acceleration = 3;
+        let targetforwardimp = (maxspeed - Math.abs(localvelocity.z)) * acceleration;
+        let forwardimp = 0;
+
+        if (keys["w"]) forwardimp = targetforwardimp;
+        if (keys["s"]) forwardimp = -targetforwardimp * 0.5;
+
+        PhysicsManager.applyRelativeImpulse(carbody, {x: 0, y: 0, z: -forwardimp});
+
+        let carangvel = carbody.angvel();
+        carbody.setAngvel({ x: carangvel.x * 0.7, y: carangvel.y * 0.95, z: carangvel.z * 0.7 }, true);
     }
 
     world.step();
