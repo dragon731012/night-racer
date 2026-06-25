@@ -356,7 +356,7 @@ function animate(time) {
         let forwardimp = 0;
 
         if (keys["w"]) forwardimp = targetforwardimp;
-        if (keys["s"]) forwardimp = -targetforwardimp * 0.5;
+        if (keys["s"]) forwardimp = -targetforwardimp * 0.8;
 
         PhysicsManager.applyRelativeImpulse(carbody, {x: 0, y: 0, z: -forwardimp});
 
