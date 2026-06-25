@@ -10,7 +10,8 @@ const susheight = 1.0;
 const susstrength = 8000;
 const susslower = 1000;
 const stiff = 6000;
-const grip = 6;
+const grip = 4;
+const turnspeed = 0.03;
 
 let currentsteer = 0;
 
@@ -139,9 +140,53 @@ const ambient = new THREE.AmbientLight(0xffffff, 0.005);
 scene.add(ambient);
 
 const car = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.8, 2), new THREE.MeshStandardMaterial({color: 0x6e6e6e}));
+
+function loadMap(num) {
+    if (num==0) {
+        loader.load('assets/track.glb', (gltf) => {
+            const model = gltf.scene;
+            model.rotation.y=Math.PI*3;
+            scene.add(model);
+            model.updateMatrixWorld(true);
+
+            //const included = ["_ground","_road","_dirt","_rock","_mud","_cliff","_fence","_terrain","_puddle","_trunk"];
+            const included = ["ALL"];
+            model.traverse((child) => {
+                if (child.isMesh && included.some(item => child.name.toLowerCase().includes(item.toLowerCase())) || included[0] == "ALL") {
+                    try {
+                        PhysicsManager.addTrimesh(child,0,0.99);
+                    } catch (e) {}
+                } else {
+                    //console.log(child.name);
+                }
+            });
+        });
+        car.position.set(5, -5, 5);
+    } else if (num==1) {
+        loader.load('assets/road_with_trees.glb', (gltf) => {
+            const model = gltf.scene;
+            model.scale.set(2,2,2);
+            scene.add(model);
+            model.updateMatrixWorld(true);
+
+            const included = ["Object_2","Object_3","Object_4"];
+            //const included = ["ALL"];
+            model.traverse((child) => {
+                if (child.isMesh && included.some(item => child.name.toLowerCase().includes(item.toLowerCase())) || included[0] == "ALL") {
+                    try {
+                        PhysicsManager.addTrimesh(child,0,0.99);
+                    } catch (e) {}
+                } else {
+                    console.log(child.name);
+                }
+            });
+        });
+        car.position.set(15, 2, 5);
+    }
+}
+loadMap(1);
 //car.geometry.translate(0, -0.5, 0); 
 //car.position.set(1, 0, 5);
-car.position.set(5, -5, 5);
 let carbody = PhysicsManager.addBox(car, 800, 0.99);
 carbody.setLinearDamping(0.1);
 carbody.setAngularDamping(0.5);
@@ -176,25 +221,6 @@ headlight2.target = headlight2target;
 car.add(headlight1);
 car.add(headlight2);
 
-loader.load('assets/track.glb', (gltf) => {
-    const model = gltf.scene;
-    model.rotation.y=Math.PI*3;
-    scene.add(model);
-    model.updateMatrixWorld(true);
-
-    //const included = ["_ground","_road","_dirt","_rock","_mud","_cliff","_fence","_terrain","_puddle","_trunk"];
-    const included = ["ALL"];
-    model.traverse((child) => {
-        if (child.isMesh && included.some(item => child.name.toLowerCase().includes(item.toLowerCase())) || included[0] == "ALL") {
-            try {
-                PhysicsManager.addTrimesh(child,0,0.99);
-            } catch (e) {}
-        } else {
-            //console.log(child.name);
-        }
-    });
-});
-
 car.add(camera);
 camera.position.set(0, -0.05, 0.5);
 
@@ -219,7 +245,7 @@ function animate(time) {
     let targetsteer = 0;
     if (keys["a"]) targetsteer = maxsteer;
     if (keys["d"]) targetsteer = -maxsteer;
-    currentsteer += (targetsteer - currentsteer) * 0.1;
+    currentsteer += (targetsteer - currentsteer) * turnspeed;
 
     // ai assisted with some of the complex math and physics
     for (let i=0;i<4;i++) {
