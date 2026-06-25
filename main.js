@@ -13,6 +13,34 @@ const stiff = 6000;
 const grip = 4;
 const turnspeed = 0.03;
 
+let colliders = new Map();
+let chunkcounter = 0;
+let chunkindex = 0;
+
+const maps = {
+    "straight": {
+        file: "assets/road_straight.glb",
+        included: ["ALL"],
+        scale: 2,
+        enteroffset: new THREE.Vector3(0, 0, 0),
+        exitoffset: new THREE.Vector3(0.68, 7, -89),
+        rotation: new THREE.Vector3(0,0,0),
+        spawn: new THREE.Vector3(-15,13,0)
+    },
+    "turns": {
+        file: "assets/road_turns.glb",
+        included: ["Object_2","Object_3","Object_4"],
+        scale: 2,
+        enteroffset: new THREE.Vector3(29.2, -11.4, 5),
+        exitoffset: new THREE.Vector3(1.15, 8, -87),
+        rotation: new THREE.Vector3(0,0,0),
+        spawn: new THREE.Vector3(15, 2, 5)
+    }
+};
+
+let currentmapexitpos = new THREE.Vector3(0, 0, 0);
+let loaded = [];
+
 let currentsteer = 0;
 
 let meshes=[];
@@ -91,8 +119,7 @@ const PhysicsManager = {
             .setFriction(friction)
             .setDensity(mass);
         
-        world.createCollider(colliderDesc, body);
-        return body;
+        return world.createCollider(colliderDesc, body);
     },
     updateMeshes: () => {
         for (let mesh of meshes) {
@@ -139,73 +166,63 @@ scene.add(sky);
 const ambient = new THREE.AmbientLight(0xffffff, 0.005);
 scene.add(ambient);
 
+// AI slightly assisted with this preloading for loop to reduce lag from my original code
+let assets = {};
+for (const [key, data] of Object.entries(maps)) {
+    assets[key] = await new Promise(res => {
+        loader.load(data.file, gltf => {
+            gltf.scene.scale.set(data.scale, data.scale, data.scale);
+            res(gltf.scene);
+        });
+    });
+}
+
 const car = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.8, 2), new THREE.MeshStandardMaterial({color: 0x6e6e6e}));
 
-function loadMap(num,start=false) {
-    if (num==0) {
-        loader.load('assets/track.glb', (gltf) => {
-            const model = gltf.scene;
-            model.rotation.y=Math.PI*3;
-            scene.add(model);
-            model.updateMatrixWorld(true);
+function loadMap(type, spawn = false) {
+    let model = assets[type].clone();
+    let pos = currentmapexitpos.clone().sub(maps[type].enteroffset);
+    model.position.copy(pos);
+    scene.add(model);
+    model.updateMatrixWorld(true);
 
-            //const included = ["_ground","_road","_dirt","_rock","_mud","_cliff","_fence","_terrain","_puddle","_trunk"];
-            const included = ["ALL"];
-            model.traverse((child) => {
-                if (child.isMesh && included.some(item => child.name.toLowerCase().includes(item.toLowerCase())) || included[0] == "ALL") {
-                    try {
-                        PhysicsManager.addTrimesh(child,0,0.99);
-                    } catch (e) {}
-                } else {
-                    //console.log(child.name);
-                }
-            });
-        });
-        if (start) car.position.set(5, -5, 5);
-    } else if (num==1) {
-        loader.load('assets/road_with_trees.glb', (gltf) => {
-            const model = gltf.scene;
-            model.scale.set(2,2,2);
-            scene.add(model);
-            model.updateMatrixWorld(true);
+    // didnt know how to get children so i asked ai :( thats it tho for this part
+    model.traverse((child) => {
+        if (child.isMesh && maps[type].included.some(item => child.name.toLowerCase().includes(item.toLowerCase())) || maps[type].included[0] == "ALL") {
+            try {
+                let collider = PhysicsManager.addTrimesh(child,0,0.99);
+                colliders.set(collider.handle, chunkcounter);
+            } catch (e) {}
+        } else {
+            //console.log(child.name);
+        }
+    });
 
-            const included = ["Object_2","Object_3","Object_4"];
-            //const included = ["ALL"];
-            model.traverse((child) => {
-                if (child.isMesh && included.some(item => child.name.toLowerCase().includes(item.toLowerCase())) || included[0] == "ALL") {
-                    try {
-                        PhysicsManager.addTrimesh(child,0,0.99);
-                    } catch (e) {}
-                } else {
-                    console.log(child.name);
-                }
-            });
-        });
-        if (start) car.position.set(15, 2, 5);
-    } else if (num==2) {
-        loader.load('assets/road_straight.glb', (gltf) => {
-            const model = gltf.scene;
-            model.scale.set(2,2,2);
-            scene.add(model);
-            model.position.set(1.1,8,-87);
-            model.updateMatrixWorld(true);
-
-            //const included = ["Object_2","Object_3","Object_4"];
-            const included = ["ALL"];
-            model.traverse((child) => {
-                if (child.isMesh && included.some(item => child.name.toLowerCase().includes(item.toLowerCase())) || included[0] == "ALL") {
-                    try {
-                        PhysicsManager.addTrimesh(child,0,0.99);
-                    } catch (e) {}
-                } else {
-                    console.log(child.name);
-                }
-            });
-        });
+    if (spawn) {
+        let spawnpos = pos.clone().add(maps[type].spawn);
+        car.position.copy(spawnpos);
     }
+
+    loaded.push(model);
+    currentmapexitpos.copy(pos).add(maps[type].exitoffset);
 }
-loadMap(1,true);
-loadMap(2);
+
+
+loadMap("turns", true);
+loadMap("straight");
+loadMap("straight");
+loadMap("turns");
+loadMap("straight");
+
+function handleNextChunk(start = false) {
+    let keys = Object.keys(maps);
+    let randomkey = keys[Math.floor(Math.random() * keys.length)];
+    loadMap(randomkey, start);
+    chunkcounter++;
+}
+handleNextChunk(true);
+handleNextChunk();
+
 //car.geometry.translate(0, -0.5, 0); 
 //car.position.set(1, 0, 5);
 let carbody = PhysicsManager.addBox(car, 800, 0.99);
@@ -268,20 +285,29 @@ function animate(time) {
     if (keys["d"]) targetsteer = -maxsteer;
     currentsteer += (targetsteer - currentsteer) * turnspeed;
 
-    // ai assisted with some of the complex math and physics
+    // ai assisted with some of the complex math and physics, but I did it and wrote it
     for (let i=0;i<4;i++) {
         let carpos = carbody.translation();
         // dont mind this line lol
         let wheelpos = new THREE.Vector3((i % 2) ? wheelxoffset : -wheelxoffset, -0.5, (i > 1) ? wheelzoffset : -wheelzoffset).applyQuaternion(quat).add(carpos);
 
         let localdown = new THREE.Vector3(0, -1, 0).applyQuaternion(quat);
-        let ray = new RAPIER.Ray(wheelpos, worlddown);
+        //let ray = new RAPIER.Ray(wheelpos, worlddown);
+        let ray = new RAPIER.Ray(wheelpos, localdown);
         let hit = world.castRay(ray, susheight, false, null, null, null, carbody);
 
         let steerangle = 0;
         if (i<2) steerangle = currentsteer;
 
         if (hit && usesus) {
+            let touchedchunk = colliders.get(hit.collider.handle);
+            if (touchedchunk) {
+                if (touchedchunk > chunkindex) {
+                    chunkindex = touchedchunk;
+                    handleNextChunk();
+                }
+            }
+
             onground = true;
             let compression = 1.0 - (hit.timeOfImpact / susheight);
             if (compression>0) {                
