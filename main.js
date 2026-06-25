@@ -141,7 +141,7 @@ scene.add(ambient);
 
 const car = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.8, 2), new THREE.MeshStandardMaterial({color: 0x6e6e6e}));
 
-function loadMap(num) {
+function loadMap(num,start=false) {
     if (num==0) {
         loader.load('assets/track.glb', (gltf) => {
             const model = gltf.scene;
@@ -161,7 +161,7 @@ function loadMap(num) {
                 }
             });
         });
-        car.position.set(5, -5, 5);
+        if (start) car.position.set(5, -5, 5);
     } else if (num==1) {
         loader.load('assets/road_with_trees.glb', (gltf) => {
             const model = gltf.scene;
@@ -181,10 +181,31 @@ function loadMap(num) {
                 }
             });
         });
-        car.position.set(15, 2, 5);
+        if (start) car.position.set(15, 2, 5);
+    } else if (num==2) {
+        loader.load('assets/road_straight.glb', (gltf) => {
+            const model = gltf.scene;
+            model.scale.set(2,2,2);
+            scene.add(model);
+            model.position.set(1.1,8,-87);
+            model.updateMatrixWorld(true);
+
+            //const included = ["Object_2","Object_3","Object_4"];
+            const included = ["ALL"];
+            model.traverse((child) => {
+                if (child.isMesh && included.some(item => child.name.toLowerCase().includes(item.toLowerCase())) || included[0] == "ALL") {
+                    try {
+                        PhysicsManager.addTrimesh(child,0,0.99);
+                    } catch (e) {}
+                } else {
+                    console.log(child.name);
+                }
+            });
+        });
     }
 }
-loadMap(1);
+loadMap(1,true);
+loadMap(2);
 //car.geometry.translate(0, -0.5, 0); 
 //car.position.set(1, 0, 5);
 let carbody = PhysicsManager.addBox(car, 800, 0.99);
