@@ -189,7 +189,7 @@ function loadMap(type, spawn = false) {
     // ai assisted with the initial traversal loop and i built from it
     model.traverse((child) => {
         let base = child.name.includes("_", child.name.indexOf("_") + 1) ? child.name.replace(/_\d+$/, "") : child.name;
-        console.log(base);
+        //console.log(base);
         if (child.isMesh && maps[type].included.some(item => base.toLowerCase() == item.toLowerCase()) || maps[type].included[0] == "ALL") {
             try {
                 let collider = PhysicsManager.addTrimesh(child,0,0.99);
