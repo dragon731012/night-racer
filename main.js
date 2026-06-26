@@ -20,7 +20,7 @@ let chunkindex = 0;
 const maps = {
     "straight": {
         file: "assets/road_straight.glb",
-        included: ["ALL"],
+        included: ["Object_0","Object_1","Object_2"],
         scale: 2,
         enteroffset: new THREE.Vector3(0, 0, 0),
         exitoffset: new THREE.Vector3(0.68, 7, -89),
@@ -186,15 +186,15 @@ function loadMap(type, spawn = false) {
     scene.add(model);
     model.updateMatrixWorld(true);
 
-    // didnt know how to get children so i asked ai :( thats it tho for this part
+    // ai assisted with the initial traversal loop and i built from it
     model.traverse((child) => {
-        if (child.isMesh && maps[type].included.some(item => child.name.toLowerCase().includes(item.toLowerCase())) || maps[type].included[0] == "ALL") {
+        let base = child.name.includes("_", child.name.indexOf("_") + 1) ? child.name.replace(/_\d+$/, "") : child.name;
+        console.log(base);
+        if (child.isMesh && maps[type].included.some(item => base.toLowerCase() == item.toLowerCase()) || maps[type].included[0] == "ALL") {
             try {
                 let collider = PhysicsManager.addTrimesh(child,0,0.99);
                 colliders.set(collider.handle, chunkcounter);
             } catch (e) {}
-        } else {
-            //console.log(child.name);
         }
     });
 
@@ -206,13 +206,6 @@ function loadMap(type, spawn = false) {
     loaded.push(model);
     currentmapexitpos.copy(pos).add(maps[type].exitoffset);
 }
-
-
-loadMap("turns", true);
-loadMap("straight");
-loadMap("straight");
-loadMap("turns");
-loadMap("straight");
 
 function handleNextChunk(start = false) {
     let keys = Object.keys(maps);
