@@ -208,8 +208,8 @@ function loadMap(type, spawn = false) {
 }
 
 function handleNextChunk(start = false) {
-    let keys = Object.keys(maps);
-    let randomkey = keys[Math.floor(Math.random() * keys.length)];
+    let mapkeys = Object.keys(maps);
+    let randomkey = mapkeys[Math.floor(Math.random() * mapkeys.length)];
     loadMap(randomkey, start);
     chunkcounter++;
 }
