@@ -294,7 +294,7 @@ function animate(time) {
 
         if (hit && usesus) {
             let touchedchunk = colliders.get(hit.collider.handle);
-            if (touchedchunk) {
+            if (touchedchunk != undefined) {
                 if (touchedchunk > chunkindex) {
                     chunkindex = touchedchunk;
                     handleNextChunk();
