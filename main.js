@@ -22,8 +22,8 @@ const maps = {
         file: "assets/road_straight.glb",
         included: ["Object_0","Object_1","Object_2"],
         scale: 2,
-        enteroffset: new THREE.Vector3(0, 0, 0),
-        exitoffset: new THREE.Vector3(0.68, 7, -89),
+        enteroffset: new THREE.Vector3(-15.662199020385742, 6.971744060516357, 54.12425231933594),
+        exitoffset: new THREE.Vector3(-14.812253952026367, 14.946840286254883, -53.0325927734375),
         rotation: new THREE.Vector3(0,0,0),
         spawn: new THREE.Vector3(-15,13,0)
     },
@@ -31,8 +31,8 @@ const maps = {
         file: "assets/road_turns.glb",
         included: ["Object_2","Object_3","Object_4"],
         scale: 2,
-        enteroffset: new THREE.Vector3(29.2, -11.4, 5),
-        exitoffset: new THREE.Vector3(1.15, 8, -87),
+        enteroffset: new THREE.Vector3(13.326072692871094, -3.465733051300049, 36.96432876586914),
+        exitoffset: new THREE.Vector3(-15.49168586730957, 14.95290470123291, -29.34079360961914),
         rotation: new THREE.Vector3(0,0,0),
         spawn: new THREE.Vector3(15, 2, 5)
     }
@@ -213,6 +213,32 @@ function handleNextChunk(start = false) {
     loadMap(randomkey, start);
     chunkcounter++;
 }
+
+function mapChunk(name) {
+    let model = assets[name].clone();
+    model.position.set(0, 0, 0);
+    scene.add(model);
+    model.updateMatrixWorld(true);
+    let addedCount = 0;
+    model.traverse((child) => {
+        let base = child.name.includes("_", child.name.indexOf("_") + 1) ? child.name.replace(/_\d+$/, "") : child.name;
+        if (child.isMesh && maps[name].included.some(item => base.toLowerCase() == item.toLowerCase())) {
+            try {
+                let collider = PhysicsManager.addTrimesh(child, 0, 0.99);
+                colliders.set(collider.handle, 0);
+                addedCount++;
+            } catch (e) { console.error(e); }
+        }
+    });
+    car.position.copy(maps[name].spawn);
+    document.addEventListener("keydown", (e) => {
+        if (e.key.toLowerCase() === "p") {
+            let t = carbody.translation();
+            console.log("car position:", [t.x, t.y, t.z]);
+        }
+    });
+}
+
 handleNextChunk(true);
 handleNextChunk();
 
