@@ -257,6 +257,7 @@ camera.position.set(0, -0.05, 0.5);
 
 function animate(time) {
     carbody.resetForces(true);
+    carbody.resetTorques(true);
 
     const rot = carbody.rotation();
     const quat = new THREE.Quaternion(rot.x, rot.y, rot.z, rot.w);
