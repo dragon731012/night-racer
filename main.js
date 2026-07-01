@@ -12,6 +12,7 @@ const susslower = 1000;
 const stiff = 6000;
 const grip = 4;
 const turnspeed = 0.03;
+const camerasmoothness = 0.2;
 
 let colliders = new Map();
 let chunkcounter = 0;
@@ -137,8 +138,10 @@ const scene = new THREE.Scene();
 //scene.fog = new THREE.FogExp2(0x000000, 0.05);
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-const controls = new PointerLockControls(camera, document.body);
-controls.enableRotate = false;
+let cameraobject = new THREE.Object3D();
+
+const controls = new PointerLockControls(cameraobject, document.body);
+controls.pointerSpeed = 10;
 document.addEventListener("click",() =>{
     controls.lock();
 });
@@ -251,8 +254,24 @@ car.castShadow = true;
 car.receiveShadow = true;
 scene.add(car);
 
+async function addCarModel(num) {
+    let gltf = await loader.loadAsync("assets/car" + num + ".glb");
+    let carmodel = gltf.scene;
+    carmodel.scale.set(0.43, 0.43, 0.43);
+    carmodel.rotation.set(0, Math.PI, 0);
+    carmodel.position.set(0.15, -0.75, 0.7);
+    car.add(carmodel);
+    carmodel.traverse(child => {
+        if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+        }
+    });
+}
+addCarModel(2);
+
 const headlight1 = new THREE.SpotLight(0xffffff, 50);
-headlight1.position.set(-0.7, 0.2, 0.8); 
+headlight1.position.set(-0.7, 0.2, -1); 
 headlight1.angle = Math.PI / 3.5; 
 headlight1.shadow.camera.near = 3;
 headlight1.penumbra = 1;
@@ -264,7 +283,7 @@ car.add(headlight1target);
 headlight1.target = headlight1target;
 
 const headlight2 = new THREE.SpotLight(0xffffff, 50);
-headlight2.position.set(0.7, 0.2, 0.8); 
+headlight2.position.set(0.7, 0.2, -1); 
 headlight2.angle = Math.PI / 3.5; 
 headlight2.shadow.camera.near = 3;
 headlight2.penumbra = 1;
@@ -278,7 +297,13 @@ headlight2.target = headlight2target;
 car.add(headlight1);
 car.add(headlight2);
 
+const carlight = new THREE.PointLight(0xfff4e0, 0.8, 3);
+carlight.position.set(0, 0.3, 0.2);
+car.add(carlight);
+
+car.add(cameraobject);
 car.add(camera);
+cameraobject.position.set(0, -0.05, 0.5);
 camera.position.set(0, -0.05, 0.5);
 
 function animate(time) {
@@ -386,7 +411,7 @@ function animate(time) {
 
     world.step();
     PhysicsManager.updateMeshes();
-    camera.rotation.set(0, 0, 0);
+    camera.quaternion.slerp(cameraobject.quaternion, camerasmoothness);
     renderer.render(scene, camera);
 }
 renderer.setAnimationLoop(animate);
