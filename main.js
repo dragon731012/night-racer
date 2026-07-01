@@ -27,6 +27,8 @@ const cambouncexstrength = 150;
 const cambouncexdamp = 6;
 const cambouncexsens = 0.1;
 
+let steeringwheel;
+
 let colliders = new Map();
 let chunkcounter = 0;
 let chunkindex = 0;
@@ -280,6 +282,7 @@ async function addCarModel(num) {
             child.receiveShadow = true;
         }
     });
+    steeringwheel = carmodel.getObjectByName("steeringWheel");
 }
 addCarModel(2);
 
@@ -342,6 +345,7 @@ function animate(time) {
     if (keys["a"]) targetsteer = maxsteer;
     if (keys["d"]) targetsteer = -maxsteer;
     currentsteer += (targetsteer - currentsteer) * turnspeed;
+    if (steeringwheel) steeringwheel.rotation.z = Math.PI - currentsteer * 3;
 
     // ai assisted with some of the complex math and physics, but I did it and wrote it
     for (let i=0;i<4;i++) {
