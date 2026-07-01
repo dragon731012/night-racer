@@ -14,6 +14,13 @@ const grip = 4;
 const turnspeed = 0.03;
 const camerasmoothness = 0.2;
 
+let lastcaryvel = 0;
+let cambounceyoffset = 0;
+let cambouncevel = 0;
+const cambouncestrength = 400;
+const cambouncedamp = 10;
+const cambouncesens = 0.05;
+
 let colliders = new Map();
 let chunkcounter = 0;
 let chunkindex = 0;
@@ -408,6 +415,15 @@ function animate(time) {
         let carangvel = carbody.angvel();
         carbody.setAngvel({ x: carangvel.x * 0.7, y: carangvel.y * 0.95, z: carangvel.z * 0.7 }, true);
     }
+
+    // camera bouncing
+    let caryveloffset = carbody.linvel().y - lastcaryvel;
+    lastcaryvel = carbody.linvel().y;
+    cambounceyoffset -= caryveloffset * cambouncesens;
+    let camforce = -cambounceyoffset * cambouncestrength - cambouncevel * cambouncedamp;
+    cambouncevel += camforce * (1/60);
+    cambounceyoffset += cambouncevel * (1/60);
+    camera.position.y = -0.05 + cambounceyoffset;
 
     world.step();
     PhysicsManager.updateMeshes();
