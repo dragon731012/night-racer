@@ -15,11 +15,17 @@ const turnspeed = 0.03;
 const camerasmoothness = 0.2;
 
 let lastcaryvel = 0;
+let lastcarxvel = 0;
 let cambounceyoffset = 0;
-let cambouncevel = 0;
-const cambouncestrength = 400;
-const cambouncedamp = 10;
-const cambouncesens = 0.05;
+let cambouncexoffset = 0;
+let cambounceyvel = 0;
+let cambouncexvel = 0;
+const cambounceystrength = 150;
+const cambounceydamp = 6;
+const cambounceysens = 0.2;
+const cambouncexstrength = 150;
+const cambouncexdamp = 6;
+const cambouncexsens = 0.1;
 
 let colliders = new Map();
 let chunkcounter = 0;
@@ -266,7 +272,7 @@ async function addCarModel(num) {
     let carmodel = gltf.scene;
     carmodel.scale.set(0.43, 0.43, 0.43);
     carmodel.rotation.set(0, Math.PI, 0);
-    carmodel.position.set(0.15, -0.75, 0.7);
+    carmodel.position.set(0.12, -0.75, 0.7);
     car.add(carmodel);
     carmodel.traverse(child => {
         if (child.isMesh) {
@@ -408,7 +414,7 @@ function animate(time) {
         let forwardimp = 0;
 
         if (keys["w"]) forwardimp = targetforwardimp;
-        if (keys["s"]) forwardimp = -targetforwardimp * 0.8;
+        if (keys["s"]) forwardimp = -targetforwardimp * 0.95;
 
         PhysicsManager.applyRelativeImpulse(carbody, {x: 0, y: 0, z: -forwardimp});
 
@@ -419,11 +425,19 @@ function animate(time) {
     // camera bouncing
     let caryveloffset = carbody.linvel().y - lastcaryvel;
     lastcaryvel = carbody.linvel().y;
-    cambounceyoffset -= caryveloffset * cambouncesens;
-    let camforce = -cambounceyoffset * cambouncestrength - cambouncevel * cambouncedamp;
-    cambouncevel += camforce * (1/60);
-    cambounceyoffset += cambouncevel * (1/60);
+    cambounceyvel -= caryveloffset * cambounceysens;
+    let camyforce = -cambounceyoffset * cambounceystrength - cambounceyvel * cambounceydamp;
+    cambounceyvel += camyforce * (1/60);
+    cambounceyoffset += cambounceyvel * (1/60);
     camera.position.y = -0.05 + cambounceyoffset;
+
+    let carxveloffset = carbody.linvel().x - lastcarxvel;
+    lastcarxvel = carbody.linvel().x;
+    cambouncexvel -= carxveloffset * cambouncexsens;
+    let camxforce = -cambouncexoffset * cambouncexstrength - cambouncexvel * cambouncexdamp;
+    cambouncexvel += camxforce * (1/60);
+    cambouncexoffset += cambouncexvel * (1/60);
+    camera.position.x = 0 + cambouncexoffset;
 
     world.step();
     PhysicsManager.updateMeshes();
