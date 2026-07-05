@@ -16,9 +16,12 @@ const camerasmoothness = 0.2;
 
 let lastcaryvel = 0;
 let lastcarxvel = 0;
+let lastcarzvel = 0;
 let cambounceyoffset = 0;
+let cambouncezoffset = 0;
 let cambouncexoffset = 0;
 let cambounceyvel = 0;
+let cambouncezvel = 0;
 let cambouncexvel = 0;
 const cambounceystrength = 150;
 const cambounceydamp = 6;
@@ -26,6 +29,9 @@ const cambounceysens = 0.2;
 const cambouncexstrength = 150;
 const cambouncexdamp = 6;
 const cambouncexsens = 0.1;
+const cambouncezstrength = 150;
+const cambouncezdamp = 6;
+const cambouncezsens = 0.1;
 
 let steeringwheel;
 
@@ -442,6 +448,14 @@ function animate(time) {
     cambouncexvel += camxforce * (1/60);
     cambouncexoffset += cambouncexvel * (1/60);
     camera.position.x = 0 + cambouncexoffset;
+
+    let carzveloffset = carbody.linvel().z - lastcarzvel;
+    lastcarzvel = carbody.linvel().z;
+    cambouncezvel -= carzveloffset * cambouncezsens;
+    let camzforce = -cambouncezoffset * cambouncezstrength - cambouncezvel * cambouncezdamp;
+    cambouncezvel += camzforce * (1/60);
+    cambouncezoffset += cambouncezvel * (1/60);
+    camera.position.z = 0.5 + cambouncezoffset;
 
     world.step();
     PhysicsManager.updateMeshes();
