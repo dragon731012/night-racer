@@ -85,6 +85,7 @@ const maps = {
 };
 
 let currentmapexitpos = new THREE.Vector3(0, 0, 0);
+let farthestcardis;
 let loaded = [];
 
 let currentsteer = 0;
@@ -417,7 +418,6 @@ function animate(time) {
             if (touchedchunk != undefined) {
                 if (touchedchunk > chunkindex) {
                     chunkindex = touchedchunk;
-                    score++;
                     handleNextChunk();
                 }
             }
@@ -509,3 +509,13 @@ function animate(time) {
     renderer.render(scene, camera);
 }
 renderer.setAnimationLoop(animate);
+
+setInterval(() => {
+    if (!farthestcardis) farthestcardis = car.position.clone();
+    if (car.position.z < farthestcardis.z) {
+        let speed = Math.sqrt(carbody.linvel().x**2 + carbody.linvel().y**2 + carbody.linvel().z**2);
+        score += Math.floor((farthestcardis.z - car.position.z) * (1 + speed / 20));
+        farthestcardis.z = car.position.z;
+        document.getElementById("score").innerText = score;
+    }
+},50);
