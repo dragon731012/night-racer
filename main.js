@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { FlyControls } from 'three/addons/controls/FlyControls.js';
 
 await RAPIER.init();
 const world = new RAPIER.World({ x: 0.0, y: -9.81, z: 0.0 });
@@ -13,6 +14,11 @@ const stiff = 6000;
 const grip = 4;
 const turnspeed = 0.03;
 const camerasmoothness = 0.2;
+
+let freecam = false;
+let clock = new THREE.Clock();
+
+let score = 0;
 
 let lastcaryvel = 0;
 let lastcarxvel = 0;
@@ -44,11 +50,29 @@ const maps = {
         file: "assets/road_straight.glb",
         included: ["Object_0","Object_1","Object_2"],
         scale: 2,
-        enteroffset: new THREE.Vector3(-15.662199020385742, 6.971744060516357, 54.12425231933594),
-        exitoffset: new THREE.Vector3(-14.812253952026367, 14.946840286254883, -53.0325927734375),
+        enteroffset: new THREE.Vector3(-16.096542358398438, 7.981929779052734, 53.090206146240234),
+        exitoffset: new THREE.Vector3(-15.130682945251465, 7.986536979675293, -51.763545989990234),
         rotation: new THREE.Vector3(0,0,0),
         spawn: new THREE.Vector3(-15,13,0)
     },
+    "curveleft": {
+        file: "assets/road_curve_left.glb",
+        included: ["Object_0","Object_1","Object_2"],
+        scale: 2,
+        enteroffset: new THREE.Vector3(32.42043685913086, 1.3111519813537598, 104.15299987792969),
+        exitoffset: new THREE.Vector3(-18.35940933227539, 1.26669442653656, 24.343416213989258),
+        rotation: new THREE.Vector3(0,0,0),
+        spawn: new THREE.Vector3(32.5, 3.5, 102)
+    },
+    "curveright": {
+        file: "assets/road_curve_right.glb",
+        included: ["Object_0","Object_1","Object_2"],
+        scale: 2,
+        enteroffset: new THREE.Vector3(-51.66175842285156, 1.2974135875701904, 102.94046020507812),
+        exitoffset: new THREE.Vector3(-16.634490966796875, 1.206100583076477, 12.328327178955078),
+        rotation: new THREE.Vector3(0,0,0),
+        spawn: new THREE.Vector3(-52, 3.5, 102)
+    }/*,
     "turns": {
         file: "assets/road_turns.glb",
         included: ["Object_2","Object_3","Object_4"],
@@ -57,7 +81,7 @@ const maps = {
         exitoffset: new THREE.Vector3(-15.49168586730957, 14.95290470123291, -29.34079360961914),
         rotation: new THREE.Vector3(0,0,0),
         spawn: new THREE.Vector3(15, 2, 5)
-    }
+    }*/
 };
 
 let currentmapexitpos = new THREE.Vector3(0, 0, 0);
@@ -184,6 +208,10 @@ renderer.toneMappingExposure = 1;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
+let fly = new FlyControls(camera, renderer.domElement);
+fly.movementSpeed = 5;
+fly.rollSpeed = 1;
+
 /*const sky = new THREE.Mesh(new THREE.SphereGeometry(400, 32, 15), new THREE.MeshStandardMaterial({color: 0x1f1f1f, side: THREE.BackSide}));
 scene.add(sky);*/
 
@@ -238,7 +266,7 @@ function handleNextChunk(start = false) {
     chunkcounter++;
 }
 
-function mapChunk(name) {
+function mapChunk(name, free = false) {
     let model = assets[name].clone();
     model.position.set(0, 0, 0);
     scene.add(model);
@@ -255,8 +283,16 @@ function mapChunk(name) {
         }
     });
     car.position.copy(maps[name].spawn);
+    freecam = free;
+    if (free) {
+        scene.add(camera);
+        camera.position.copy(maps[name].spawn);
+    }
+    let sun = new THREE.DirectionalLight(0xfff2e0, 1.5);
+    scene.add(sun);
     document.addEventListener("keydown", (e) => {
         if (e.key.toLowerCase() === "p") {
+            if (free) console.log(camera.position);
             let t = carbody.translation();
             console.log("car position:", [t.x, t.y, t.z]);
         }
@@ -265,6 +301,7 @@ function mapChunk(name) {
 
 handleNextChunk(true);
 handleNextChunk();
+//mapChunk("curveright",true);
 
 //car.geometry.translate(0, -0.5, 0); 
 //car.position.set(1, 0, 5);
@@ -323,12 +360,20 @@ const carlight = new THREE.PointLight(0xfff4e0, 0.8, 3);
 carlight.position.set(0, 0.3, 0.2);
 car.add(carlight);
 
-car.add(cameraobject);
-car.add(camera);
+if (!freecam) {
+    car.add(cameraobject);
+    car.add(camera);
+}
 cameraobject.position.set(0, -0.05, 0.5);
 camera.position.set(0, -0.05, 0.5);
 
 function animate(time) {
+    if (freecam) {
+        let delta = clock.getDelta();
+        fly.update(delta);
+        renderer.render(scene, camera);
+        return;
+    }
     carbody.resetForces(true);
     carbody.resetTorques(true);
 
@@ -372,6 +417,7 @@ function animate(time) {
             if (touchedchunk != undefined) {
                 if (touchedchunk > chunkindex) {
                     chunkindex = touchedchunk;
+                    score++;
                     handleNextChunk();
                 }
             }
