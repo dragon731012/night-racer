@@ -12,13 +12,17 @@ const susstrength = 8000;
 const susslower = 1000;
 const stiff = 6000;
 const grip = 4;
-const turnspeed = 0.03;
 const camerasmoothness = 0.2;
+let turnspeed = 0.03;
+let maxsteeramount = 0.15;
+let maxspeed = 40;
 
 let freecam = false;
 let clock = new THREE.Clock();
 
 let score = 0;
+let highscore = localStorage.getItem("highscore");
+document.getElementById("highscore").innerText = highscore ? highscore : 0;
 
 let lastcaryvel = 0;
 let lastcarxvel = 0;
@@ -375,6 +379,11 @@ function animate(time) {
         renderer.render(scene, camera);
         return;
     }
+
+    maxspeed = 40 + chunkindex * 0.8;
+    turnspeed = Math.min(0.08, 0.03 + chunkindex * 0.002);
+    maxsteeramount = Math.min(0.4, 0.15 + chunkindex * 0.0035);
+
     carbody.resetForces(true);
     carbody.resetTorques(true);
 
@@ -391,13 +400,13 @@ function animate(time) {
 
     let carvel = carbody.linvel();
     let speed = Math.sqrt(carvel.x * carvel.x + carvel.y * carvel.y + carvel.z * carvel.z);
-    let maxsteer = Math.max(0.15, 0.8 * (1.0 - speed / 50));
+    let maxsteer = Math.max(maxsteeramount, 0.8 * (1.0 - speed / 50));
 
     let targetsteer = 0;
     if (keys["a"]) targetsteer = maxsteer;
     if (keys["d"]) targetsteer = -maxsteer;
     currentsteer += (targetsteer - currentsteer) * turnspeed;
-    if (steeringwheel) steeringwheel.rotation.z = Math.PI - currentsteer * 3;
+    if (steeringwheel) steeringwheel.rotation.z = Math.PI - currentsteer * 6;
 
     // ai assisted with some of the complex math and physics, but I did it and wrote it
     for (let i=0;i<4;i++) {
@@ -463,8 +472,7 @@ function animate(time) {
            
     if (onground) {
         let localvelocity = PhysicsManager.getRelativeLinvel(carbody);
-        
-        let maxspeed = 40;
+
         let acceleration = 3;
         let targetforwardimp = (maxspeed - Math.abs(localvelocity.z)) * acceleration;
         let forwardimp = 0;
@@ -514,8 +522,13 @@ setInterval(() => {
     if (!farthestcardis) farthestcardis = car.position.clone();
     if (car.position.z < farthestcardis.z) {
         let speed = Math.sqrt(carbody.linvel().x**2 + carbody.linvel().y**2 + carbody.linvel().z**2);
-        score += Math.floor((farthestcardis.z - car.position.z) * (1 + speed / 20));
+        score += Math.floor((farthestcardis.z - car.position.z) * (1 + speed / 10));
         farthestcardis.z = car.position.z;
         document.getElementById("score").innerText = score;
+    }
+    if (score > highscore) {
+        highscore = score;
+        localStorage.setItem("highscore", highscore);
+        document.getElementById("highscore").innerText = highscore;
     }
 },50);
