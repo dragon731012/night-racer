@@ -50,6 +50,17 @@ let colliders = new Map();
 let chunkcounter = 0;
 let chunkindex = 0;
 
+let bg = new Audio("assets/bg.mp3");
+bg.loop = true;
+
+let engine = new Audio("assets/engine.wav");
+engine.volume = 0.1;
+engine.loop = true;
+
+let midaccelerate = new Audio("assets/midaccelerate.wav");
+midaccelerate.loop = true;
+let accelerating = false;
+
 const maps = {
     "straight": {
         file: "assets/road_straight.glb",
@@ -213,15 +224,47 @@ const controls = new PointerLockControls(cameraobject, document.body);
 controls.pointerSpeed = 10;
 document.addEventListener("click",() =>{
     if (!crashed) controls.lock();
+    if (bg.paused) bg.play();
+    if (engine.paused) engine.play();
 });
 
 let keys=[];
 document.addEventListener("keydown",(e)=>{
     keys[e.key.toLowerCase()]=true;
+
+    if (!crashed) {
+        if (keys["w"] && !accelerating) {
+            midaccelerate.play();
+            accelerating = true;
+        }
+    }
 });
 document.addEventListener("keyup",(e)=>{
     keys[e.key.toLowerCase()]=false;
+
+    if (!crashed && accelerating && e.key.toLowerCase() == "w") {
+        accelerating = false;
+    }
 });
+
+setInterval(() => {
+    let add = 0.05;
+    let subt = 0.1;
+    if (!accelerating) {
+        if (midaccelerate.volume - subt > 0) { 
+            midaccelerate.volume -= subt;
+        } else {
+            midaccelerate.volume = 0;
+            midaccelerate.pause();
+        }
+    } else {
+        if (midaccelerate.volume + add < 1) {
+            midaccelerate.volume += 0.05;
+        } else {
+            midaccelerate.volume = 1;
+        }
+    }
+},100);
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -420,6 +463,10 @@ function animate(time) {
     let carvel = carbody.linvel();
     let speed = Math.sqrt(carvel.x * carvel.x + carvel.y * carvel.y + carvel.z * carvel.z);
     let maxsteer = Math.max(maxsteeramount, 0.8 * (1.0 - speed / 50));
+
+    let playback = 1 + Math.min(speed / maxspeed, 1) * 0.8;
+    engine.playbackRate = playback;
+    midaccelerate.playbackRate = playback;
 
     let targetsteer = 0;
     if (keys["a"]) targetsteer = maxsteer;
