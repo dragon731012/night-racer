@@ -77,6 +77,24 @@ const maps = {
         exitoffset: new THREE.Vector3(-16.634490966796875, 1.206100583076477, 12.328327178955078),
         rotation: new THREE.Vector3(0,0,0),
         spawn: new THREE.Vector3(-52, 3.5, 102)
+    },
+    "up": {
+        file: "assets/road_up.glb",
+        included: ["Object_0","Object_1","Object_2"],
+        scale: 2,
+        enteroffset: new THREE.Vector3(-20.994415283203125, -14.38963794708252, 104.52879333496094),
+        exitoffset: new THREE.Vector3(-14.442913055419922, 1.3251999616622925, 0.35062703490257263),
+        rotation: new THREE.Vector3(0,0,0),
+        spawn: new THREE.Vector3(-21, -11, 100.5)
+    },
+    "down": {
+        file: "assets/road_down.glb",
+        included: ["Object_0","Object_1","Object_2"],
+        scale: 2,
+        enteroffset: new THREE.Vector3(-20.813392639160156, 0.8175168633460999, 103.45845794677734),
+        exitoffset: new THREE.Vector3(-14.634032249450684, -10.295941352844238, 1.7138200998306274),
+        rotation: new THREE.Vector3(0,0,0),
+        spawn: new THREE.Vector3(-20, 3.5, 103)
     }/*,
     "turns": {
         file: "assets/road_turns.glb",
@@ -307,7 +325,7 @@ function mapChunk(name, free = false) {
 
 handleNextChunk(true);
 handleNextChunk();
-//mapChunk("curveright",true);
+//mapChunk("up");
 
 //car.geometry.translate(0, -0.5, 0); 
 //car.position.set(1, 0, 5);
@@ -489,7 +507,7 @@ function animate(time) {
 
     // crash detection
     let velocity = carbody.linvel();
-    let hitamount = new THREE.Vector3(velocity.x - lastcarxvel, velocity.y - lastcaryvel, velocity.z - lastcarzvel).length();
+    let hitamount = new THREE.Vector3(velocity.x - lastcarxvel, (velocity.y - lastcaryvel) * 0.7, velocity.z - lastcarzvel).length();
     if (hitamount > 1.2 && !crashed) {
         crashed = true;
         controls.unlock();
