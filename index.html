@@ -1,42 +1,27 @@
-<script type="module" src="main.js"></script>
-<div id="cont">
-    <div id="score">0</div>
-    <div id="highscore">0</div>
-</div>
+<iframe src="game.html"></iframe>
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Geist+Pixel&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap');
-
-    #score {
-        z-index: 999;
-        color: white;
-        font-size: 3vh;
-        text-align: center;
-        font-family: "Geist Pixel", sans-serif;
-        font-optical-sizing: auto;
-        font-weight: 400;
-        font-style: normal;
-        font-variation-settings: "ELSH" 0;
+    body {
+        background: black;
     }
 
-    #cont {
+    iframe {
         position: absolute;
+        left: 0px;
+        top: 0px;
+        border: 0px;
+        margin: 0px;
+        transition: 3s all;
         width: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
-
-    #highscore {
-        z-index: 999;
-        color: white;
-        opacity: 0.8;
-        font-size: 1.5vh;
-        text-align: center;
-        font-family: "Geist Pixel", sans-serif;
-        font-optical-sizing: auto;
-        font-weight: 400;
-        font-style: normal;
-        font-variation-settings: "ELSH" 0;
+        height: 100%;
+        background: black;
     }
 </style>
+<script>
+    function restart() {
+        document.querySelectorAll("iframe")[0].style.opacity = 0;
+        setTimeout(() => {
+            document.querySelectorAll("iframe")[0].contentWindow.location.reload();
+            document.querySelectorAll("iframe")[0].style.opacity = 1;
+        }, 3000);
+    }
+</script>

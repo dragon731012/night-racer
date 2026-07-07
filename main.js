@@ -22,6 +22,7 @@ let clock = new THREE.Clock();
 
 let score = 0;
 let highscore = localStorage.getItem("highscore");
+let crashed = false;
 document.getElementById("highscore").innerText = highscore ? highscore : 0;
 
 let lastcaryvel = 0;
@@ -57,7 +58,7 @@ const maps = {
         enteroffset: new THREE.Vector3(-16.096542358398438, 7.981929779052734, 53.090206146240234),
         exitoffset: new THREE.Vector3(-15.130682945251465, 7.986536979675293, -51.763545989990234),
         rotation: new THREE.Vector3(0,0,0),
-        spawn: new THREE.Vector3(-15,13,0)
+        spawn: new THREE.Vector3(-15,9,0)
     },
     "curveleft": {
         file: "assets/road_curve_left.glb",
@@ -193,7 +194,7 @@ let cameraobject = new THREE.Object3D();
 const controls = new PointerLockControls(cameraobject, document.body);
 controls.pointerSpeed = 10;
 document.addEventListener("click",() =>{
-    controls.lock();
+    if (!crashed) controls.lock();
 });
 
 let keys=[];
@@ -486,6 +487,36 @@ function animate(time) {
         carbody.setAngvel({ x: carangvel.x * 0.7, y: carangvel.y * 0.95, z: carangvel.z * 0.7 }, true);
     }
 
+    // crash detection
+    let velocity = carbody.linvel();
+    let hitamount = new THREE.Vector3(velocity.x - lastcarxvel, velocity.y - lastcaryvel, velocity.z - lastcarzvel).length();
+    if (hitamount > 1.2 && !crashed) {
+        crashed = true;
+        controls.unlock();
+        renderer.setAnimationLoop(null);
+        document.querySelectorAll("canvas")[0].style.display = "none";
+        document.getElementById("cont").style.justifyContent = "center";
+        document.getElementById("score").style = "transition: 0s all; display: none; opacity: 0; font-size: 3vh;";
+        document.getElementById("highscore").style = "transition: 0s all; display: none; opacity: 0; font-size: 3vh;";
+        document.getElementById("score").innerText = "Score: " + document.getElementById("score").innerText;
+        document.getElementById("highscore").innerText = "High Score: " + document.getElementById("highscore").innerText;
+        document.getElementById("gameover").style.display = "block";
+        setTimeout(() => {
+            document.getElementById("gameover").style.opacity = 1;
+            document.getElementById("score").style = "transition: 2s all; display: block; opacity: 0; font-size: 3vh; margin-top: 10px;";
+            document.getElementById("highscore").style = "transition: 2s all; display: block; opacity: 0; font-size: 3vh;";
+            setTimeout(() => {
+                document.getElementById("score").style.opacity = 1;
+                setTimeout(() => {
+                    document.getElementById("highscore").style.opacity = 1;
+                    setTimeout(() => {
+                        document.getElementById("restart").style.opacity = 1;
+                    },900);
+                },900);
+            },2500);
+        },1000);
+    }
+
     // camera bouncing
     let caryveloffset = carbody.linvel().y - lastcaryvel;
     lastcaryvel = carbody.linvel().y;
@@ -519,16 +550,18 @@ function animate(time) {
 renderer.setAnimationLoop(animate);
 
 setInterval(() => {
-    if (!farthestcardis) farthestcardis = car.position.clone();
-    if (car.position.z < farthestcardis.z) {
-        let speed = Math.sqrt(carbody.linvel().x**2 + carbody.linvel().y**2 + carbody.linvel().z**2);
-        score += Math.floor((farthestcardis.z - car.position.z) * (1 + speed / 10));
-        farthestcardis.z = car.position.z;
-        document.getElementById("score").innerText = score;
-    }
-    if (score > highscore) {
-        highscore = score;
-        localStorage.setItem("highscore", highscore);
-        document.getElementById("highscore").innerText = highscore;
+    if (!crashed) {
+        if (!farthestcardis) farthestcardis = car.position.clone();
+        if (car.position.z < farthestcardis.z) {
+            let speed = Math.sqrt(carbody.linvel().x**2 + carbody.linvel().y**2 + carbody.linvel().z**2);
+            score += Math.floor((farthestcardis.z - car.position.z) * (1 + speed / 10));
+            farthestcardis.z = car.position.z;
+            document.getElementById("score").innerText = score;
+        }
+        if (score > highscore) {
+            highscore = score;
+            localStorage.setItem("highscore", highscore);
+            document.getElementById("highscore").innerText = highscore;
+        }
     }
 },50);
