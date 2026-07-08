@@ -199,8 +199,9 @@ const PhysicsManager = {
         const colliderDesc = RAPIER.ColliderDesc.trimesh(vertices, indices)
             .setFriction(friction)
             .setDensity(mass);
-        
-        return world.createCollider(colliderDesc, body);
+
+        const col = world.createCollider(colliderDesc, body);
+        return [col, body];
     },
     updateMeshes: () => {
         for (let mesh of meshes) {
@@ -305,13 +306,18 @@ function loadMap(type, spawn = false) {
     scene.add(model);
     model.updateMatrixWorld(true);
 
+    let bodies = [];
+
     // ai assisted with the initial traversal loop and i built from it
     model.traverse((child) => {
         let base = child.name.includes("_", child.name.indexOf("_") + 1) ? child.name.replace(/_\d+$/, "") : child.name;
         //console.log(base);
         if (child.isMesh && maps[type].included.some(item => base.toLowerCase() == item.toLowerCase()) || maps[type].included[0] == "ALL") {
             try {
-                let collider = PhysicsManager.addTrimesh(child,0,0.99);
+                let mesh = PhysicsManager.addTrimesh(child,0,0.99);
+                let collider = mesh[0];
+                bodies.push(mesh[1]);
+
                 colliders.set(collider.handle, chunkcounter);
             } catch (e) {}
         }
@@ -322,8 +328,38 @@ function loadMap(type, spawn = false) {
         car.position.copy(spawnpos);
     }
 
-    loaded.push(model);
+    loaded.push({
+        index: chunkcounter, 
+        model,
+        bodies
+    });
+    
     currentmapexitpos.copy(pos).add(maps[type].exitoffset);
+}
+
+function removeOldestChunk() {
+    let map = loaded.at(0);
+    if (map) {
+        scene.remove(map.model);
+        map.model.traverse((child) => {
+            if (child.isMesh) {
+                child.geometry.dispose();
+                let mats;
+                if (Array.isArray(child.material)) {
+                    mats = child.material;
+                } else {
+                    mats = [child.material];
+                }
+                for (let mat of mats) {
+                    mat.dispose();
+                }
+            }
+        });
+        for (let body of map.bodies) {
+            world.removeRigidBody(body);
+        }
+        loaded.shift();
+    }
 }
 
 function handleNextChunk(start = false) {
@@ -331,6 +367,9 @@ function handleNextChunk(start = false) {
     let randomkey = mapkeys[Math.floor(Math.random() * mapkeys.length)];
     loadMap(randomkey, start);
     chunkcounter++;
+    while (loaded.length > 3) {
+        removeOldestChunk();
+    }
 }
 
 function mapChunk(name, free = false) {
