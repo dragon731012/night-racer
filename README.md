@@ -1,0 +1,5 @@
+# Why I made this
+When I play a racing game, I don't ever feel like I'm going "fast". In my opinion, nothing ever truly simulated the experience of driving in real life. Additionally, I've always enjoyed driving at night. Nothing ever beats the feeling of driving on a long road at night. I built this game to replicate it. The thing is, when I was making this game, I realized that this experience is very dangerous, especially when you go too fast. This game serves as a great placeholder to enjoy the experience while also understanding the high risk of doing it in real life. 
+
+# AI Policy
+AI is just a tool. It can be superb for troubleshooting and understanding complex physics, but completely AI written code destroys the essence and art of programming. While making this project, I did not overuse AI and commented specific parts that AI assisted with.
