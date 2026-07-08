@@ -557,6 +557,9 @@ function animate(time) {
     let hitamount = new THREE.Vector3(velocity.x - lastcarxvel, (velocity.y - lastcaryvel) * 0.7, velocity.z - lastcarzvel).length();
     if (hitamount > 1.2 && !crashed) {
         crashed = true;
+        bg.pause();
+        engine.pause();
+        midaccelerate.pause();
         controls.unlock();
         renderer.setAnimationLoop(null);
         document.querySelectorAll("canvas")[0].style.display = "none";
