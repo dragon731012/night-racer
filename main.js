@@ -224,9 +224,11 @@ let cameraobject = new THREE.Object3D();
 const controls = new PointerLockControls(cameraobject, document.body);
 controls.pointerSpeed = 10;
 document.addEventListener("click",() =>{
-    if (!crashed) controls.lock();
-    if (bg.paused) bg.play();
-    if (engine.paused) engine.play();
+    if (!crashed) {
+        controls.lock();
+        if (bg.paused) bg.play();
+        if (engine.paused) engine.play();
+    }
 });
 
 let keys=[];
