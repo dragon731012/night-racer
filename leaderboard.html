@@ -1,0 +1,130 @@
+<script>
+    const scores = JSON.parse(localStorage.getItem("leaderboard")) ? JSON.parse(localStorage.getItem("leaderboard")) : [
+        {
+            user: "----- ",
+            score: 0
+        },
+        {
+            user: "----- ",
+            score: 0
+        },{
+            user: "----- ",
+            score: 0
+        },{
+            user: "----- ",
+            score: 0
+        },{
+            user: "----- ",
+            score: 0
+        }
+    ];
+</script>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Geist+Pixel&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap');
+
+    .score {
+        z-index: 999;
+        color: white;
+        font-size: 3vh;
+        text-align: center;
+        opacity: 0;
+        transition: 2s all;
+    }
+
+    #back {
+        opacity: 0;
+        font-family: "Geist Pixel", sans-serif;
+        font-optical-sizing: auto;
+        font-weight: 400;
+        transition: 2s opacity, 0.5s background;
+        cursor: pointer;
+        font-style: normal;
+        font-variation-settings: "ELSH" 0;
+        margin-top: 20px;
+        color: white;
+        background: rgba(255, 255, 255, 0);
+        border: 1px solid white;
+        border-radius: 18px;
+        padding: 5px;
+        padding-right: 5px;
+        padding-left: 5px;
+        font-size: 2.2vh;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    #back:hover {
+        background: rgba(255, 255, 255, 0.4);
+    }
+
+    body {
+        overflow: hidden;
+        background-color: black;
+    }
+
+
+    #lbtext {
+        z-index: 999;
+        color: white;
+        opacity: 0;
+        text-align: center;
+        display: none;
+        font-size: 8vh;
+        transition: 5s all;
+    }
+
+    div {
+        font-family: "Geist Pixel", sans-serif;
+        font-optical-sizing: auto;
+        font-weight: 400;
+        font-style: normal;
+        font-variation-settings: "ELSH" 0;
+    }
+
+    #cont {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: start;
+        align-items: center;
+    }
+</style>
+<div id="cont">
+    <div id="lbtext">
+        Leaderboard
+    </div>
+    <div id="scores"></div>
+    <button id="back" onclick="window.parent.back();">back</button>
+</div>
+<script>
+    while (scores.length > 0) {
+        let scoredata = scores.shift();
+        if (scoredata.user.includes(" ")) continue;
+        let score = document.createElement("div");
+        score.className = "score";
+        score.innerText = scoredata.user + ": " + scoredata.score;
+        document.getElementById("scores").appendChild(score);
+    }
+
+    document.getElementById("cont").style.justifyContent = "center";
+    document.getElementById("lbtext").style.display = "block";
+    setTimeout(() => {
+        document.getElementById("lbtext").style.opacity = 1;
+        setTimeout(() => {
+            let i = 0;
+            let scoreshowint = setInterval(() => {
+                if (!document.getElementsByClassName("score")[i]) {
+                    clearInterval(scoreshowint);
+                    setTimeout(() => {
+                        document.getElementById("back").style.opacity = 1;
+                    },1000);
+                } else {
+                    document.getElementsByClassName("score")[i].style.opacity = 1;
+                    i++;
+                }
+            }, 700);
+        },1000);
+    },1000);
+</script>

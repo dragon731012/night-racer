@@ -21,7 +21,28 @@ let freecam = false;
 let clock = new THREE.Clock();
 
 let score = 0;
-let highscore = localStorage.getItem("highscore");
+let leaderboard = JSON.parse(localStorage.getItem("leaderboard"));
+if (!leaderboard) localStorage.setItem("leaderboard", JSON.stringify(
+[{
+    user: "----- ",
+    score: 0
+},
+{
+    user: "----- ",
+    score: 0
+},{
+    user: "----- ",
+    score: 0
+},{
+    user: "----- ",
+    score: 0
+},{
+    user: "----- ",
+    score: 0
+}]));
+leaderboard = JSON.parse(localStorage.getItem("leaderboard"))/*.filter((e) => !e.user.includes(" "))*/;
+let highscore = leaderboard.at(-1) ? leaderboard.at(-1).score : 0;
+let currenthsi = leaderboard.length - 1;
 let crashed = false;
 document.getElementById("highscore").innerText = highscore ? highscore : 0;
 
@@ -478,7 +499,7 @@ if (!freecam) {
 cameraobject.position.set(0, -0.05, 0.5);
 camera.position.set(0, -0.05, 0.5);
 
-function animate(time) {
+async function animate(time) {
     if (freecam) {
         let delta = clock.getDelta();
         fly.update(delta);
@@ -609,26 +630,68 @@ function animate(time) {
         document.querySelectorAll("canvas")[0].style.display = "none";
         document.getElementById("cont").style.justifyContent = "center";
         document.getElementById("score").style = "transition: 0s all; display: none; opacity: 0; font-size: 3vh;";
-        document.getElementById("highscore").style = "transition: 0s all; display: none; opacity: 0; font-size: 3vh;";
         document.getElementById("othertext").style = "transition: 0s all; display: none; opacity: 0; font-size: 3vh;";
+        document.getElementById("highscore").style.display = "none";
         document.getElementById("score").innerText = "Score: " + document.getElementById("score").innerText;
-        document.getElementById("highscore").innerText = "High Score: " + document.getElementById("highscore").innerText;
         document.getElementById("gameover").style.display = "block";
+
+        if (currenthsi < leaderboard.length - 1) {
+            await new Promise((resolve) => {
+                document.getElementById("highscore").style.display = "none";
+                document.getElementById("score").style.display = "none";
+                document.getElementById("leaderboard").style.display = "none";
+                document.getElementById("restart").style.display = "none";
+
+                document.getElementById("gameover").textContent = "Username? ";
+                document.getElementById("gameover").style.fontSize = "3vh";
+                document.body.style.cursor = "none";
+                function userlistener(e) {
+                    if (e.key == "Enter") {
+                        leaderboard.push({
+                            score: score,
+                            user: document.getElementById("gameover").textContent.replace("Username? ", "")
+                        });
+                        leaderboard.sort((a, b) => b.score - a.score);
+                        if (leaderboard.length > 5) leaderboard.pop();
+
+                        localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+                        document.removeEventListener("keyup",userlistener);
+                        document.getElementById("gameover").style.opacity = 0;
+                        document.getElementById("gameover").addEventListener("transitionend", () => {
+                            document.getElementById("gameover").innerText = "Game Over.";
+                            document.getElementById("gameover").style.fontSize = "";
+                            document.getElementById("restart").style.display = "";
+                            document.getElementById("leaderboard").style.display = "";
+                            document.body.style.cursor = "";
+                            resolve();
+                        }, {once: true});
+                    } else if (e.key.length == 1) {
+                        document.getElementById("gameover").textContent+=e.key.toUpperCase();
+                    } else if (e.key == "Backspace" && document.getElementById("gameover").textContent != "Username? ") {
+                        document.getElementById("gameover").textContent = document.getElementById("gameover").textContent.slice(0, -1);
+                    }
+                }
+                document.addEventListener("keyup", userlistener);
+                setTimeout(() => {
+                    document.getElementById("gameover").style.opacity = 1;
+                });
+            });
+        }
+
         setTimeout(() => {
             document.getElementById("gameover").style.opacity = 1;
             document.getElementById("score").style = "transition: 2s all; display: block; opacity: 0; font-size: 3vh; margin-top: 10px;";
             document.getElementById("othertext").style = "transition: 2s all; display: block; opacity: 0; font-size: 3vh; margin-top: 10px;";
-            document.getElementById("highscore").style = "transition: 2s all; display: block; opacity: 0; font-size: 3vh;";
             setTimeout(() => {
                 document.getElementById("othertext").style.opacity = 1;
                 setTimeout(() => {
                     document.getElementById("score").style.opacity = 1;
                     setTimeout(() => {
-                        document.getElementById("highscore").style.opacity = 1;
+                        document.getElementById("leaderboard").style.opacity = 1;
                         setTimeout(() => {
                             document.getElementById("restart").style.opacity = 1;
                         },900);
-                    },900);
+                    },1300);
                 },1500);
             },2500);
         },1000);
@@ -676,8 +739,8 @@ setInterval(() => {
             document.getElementById("score").innerText = score;
         }
         if (score > highscore) {
-            highscore = score;
-            localStorage.setItem("highscore", highscore);
+            currenthsi--;
+            highscore = currenthsi >= 0 ? leaderboard.at(currenthsi).score : score;
             document.getElementById("highscore").innerText = highscore;
         }
     }
