@@ -41,8 +41,8 @@ if (!leaderboard) localStorage.setItem("leaderboard", JSON.stringify(
     score: 0
 }]));
 leaderboard = JSON.parse(localStorage.getItem("leaderboard"))/*.filter((e) => !e.user.includes(" "))*/;
-let highscore = leaderboard.at(-1) ? leaderboard.at(-1).score : 0;
 let currenthsi = leaderboard.length - 1;
+let highscore = currenthsi >= 0 ? leaderboard.at(currenthsi).score : score;
 let crashed = false;
 document.getElementById("highscore").innerText = highscore ? highscore : 0;
 
@@ -637,46 +637,52 @@ async function animate(time) {
 
         if (currenthsi < leaderboard.length - 1) {
             await new Promise((resolve) => {
-                document.getElementById("highscore").style.display = "none";
-                document.getElementById("score").style.display = "none";
-                document.getElementById("leaderboard").style.display = "none";
-                document.getElementById("restart").style.display = "none";
-
-                document.getElementById("gameover").textContent = "Username? ";
-                document.getElementById("gameover").style.fontSize = "3vh";
-                document.body.style.cursor = "none";
-                function userlistener(e) {
-                    if (e.key == "Enter") {
-                        leaderboard.push({
-                            score: score,
-                            user: document.getElementById("gameover").textContent.replace("Username? ", "")
-                        });
-                        leaderboard.sort((a, b) => b.score - a.score);
-                        if (leaderboard.length > 5) leaderboard.pop();
-
-                        localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
-                        document.removeEventListener("keyup",userlistener);
-                        document.getElementById("gameover").style.opacity = 0;
-                        document.getElementById("gameover").addEventListener("transitionend", () => {
-                            document.getElementById("gameover").innerText = "Game Over.";
-                            document.getElementById("gameover").style.fontSize = "";
-                            document.getElementById("restart").style.display = "";
-                            document.getElementById("leaderboard").style.display = "";
-                            document.body.style.cursor = "";
-                            resolve();
-                        }, {once: true});
-                    } else if (e.key.length == 1) {
-                        document.getElementById("gameover").textContent+=e.key.toUpperCase();
-                    } else if (e.key == "Backspace" && document.getElementById("gameover").textContent != "Username? ") {
-                        document.getElementById("gameover").textContent = document.getElementById("gameover").textContent.slice(0, -1);
-                    }
-                }
-                document.addEventListener("keyup", userlistener);
                 setTimeout(() => {
-                    document.getElementById("gameover").style.opacity = 1;
-                });
+                    document.getElementById("highscore").style.display = "none";
+                    document.getElementById("score").style.display = "none";
+                    document.getElementById("leaderboard").style.display = "none";
+                    document.getElementById("restart").style.display = "none";
+
+                    document.getElementById("gameover").textContent = "Username? ";
+                    document.getElementById("gameover").style.fontSize = "3vh";
+                    document.getElementById("gameover").style.transition = "1s all";
+                    document.body.style.cursor = "none";
+                    function userlistener(e) {
+                        if (e.key == "Enter") {
+                            leaderboard.push({
+                                score: score,
+                                user: document.getElementById("gameover").textContent.replace("Username? ", "")
+                            });
+                            leaderboard.sort((a, b) => b.score - a.score);
+                            if (leaderboard.length > 5) leaderboard.pop();
+
+                            localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+                            document.removeEventListener("keyup",userlistener);
+                            document.getElementById("gameover").style.opacity = 0;
+                            document.getElementById("gameover").addEventListener("transitionend", () => {
+                                document.getElementById("gameover").innerText = "Game Over.";
+                                document.getElementById("gameover").style.transition = "";
+                                document.getElementById("gameover").style.fontSize = "";
+                                document.getElementById("restart").style.display = "";
+                                document.getElementById("leaderboard").style.display = "";
+                                document.body.style.cursor = "";
+                                resolve();
+                            }, {once: true});
+                        } else if (e.key.length == 1) {
+                            document.getElementById("gameover").textContent+=e.key.toUpperCase();
+                        } else if (e.key == "Backspace" && document.getElementById("gameover").textContent != "Username? ") {
+                            document.getElementById("gameover").textContent = document.getElementById("gameover").textContent.slice(0, -1);
+                        }
+                    }
+                    document.addEventListener("keyup", userlistener);
+                    setTimeout(() => {
+                        document.getElementById("gameover").style.opacity = 1;
+                    },1000);
+                }, 500);
             });
         }
+
+        document.getElementById("gameover").style.transition = "5s all";
 
         setTimeout(() => {
             document.getElementById("gameover").style.opacity = 1;
@@ -694,7 +700,7 @@ async function animate(time) {
                     },1300);
                 },1500);
             },2500);
-        },1000);
+        },2000);
     }
 
     // camera bouncing
