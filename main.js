@@ -49,6 +49,7 @@ let steeringwheel;
 let colliders = new Map();
 let chunkcounter = 0;
 let chunkindex = 0;
+let lastchunk = "straight";
 
 let bg = new Audio("assets/bg.mp3");
 bg.loop = true;
@@ -366,8 +367,10 @@ function removeOldestChunk() {
 
 function handleNextChunk(start = false) {
     let mapkeys = Object.keys(maps);
+    if (lastchunk != "straight") mapkeys.splice(mapkeys.indexOf(lastchunk), 1);
     let randomkey = mapkeys[Math.floor(Math.random() * mapkeys.length)];
     loadMap(randomkey, start);
+    lastchunk = randomkey;
     chunkcounter++;
     while (loaded.length > 3) {
         removeOldestChunk();
