@@ -607,21 +607,26 @@ function animate(time) {
         document.getElementById("cont").style.justifyContent = "center";
         document.getElementById("score").style = "transition: 0s all; display: none; opacity: 0; font-size: 3vh;";
         document.getElementById("highscore").style = "transition: 0s all; display: none; opacity: 0; font-size: 3vh;";
+        document.getElementById("othertext").style = "transition: 0s all; display: none; opacity: 0; font-size: 3vh;";
         document.getElementById("score").innerText = "Score: " + document.getElementById("score").innerText;
         document.getElementById("highscore").innerText = "High Score: " + document.getElementById("highscore").innerText;
         document.getElementById("gameover").style.display = "block";
         setTimeout(() => {
             document.getElementById("gameover").style.opacity = 1;
             document.getElementById("score").style = "transition: 2s all; display: block; opacity: 0; font-size: 3vh; margin-top: 10px;";
+            document.getElementById("othertext").style = "transition: 2s all; display: block; opacity: 0; font-size: 3vh; margin-top: 10px;";
             document.getElementById("highscore").style = "transition: 2s all; display: block; opacity: 0; font-size: 3vh;";
             setTimeout(() => {
-                document.getElementById("score").style.opacity = 1;
+                document.getElementById("othertext").style.opacity = 1;
                 setTimeout(() => {
-                    document.getElementById("highscore").style.opacity = 1;
+                    document.getElementById("score").style.opacity = 1;
                     setTimeout(() => {
-                        document.getElementById("restart").style.opacity = 1;
+                        document.getElementById("highscore").style.opacity = 1;
+                        setTimeout(() => {
+                            document.getElementById("restart").style.opacity = 1;
+                        },900);
                     },900);
-                },900);
+                },1500);
             },2500);
         },1000);
     }
