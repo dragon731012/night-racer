@@ -1,5 +1,8 @@
 # Why I made this
 When I play a racing game, I don't ever feel like I'm going "fast". In my opinion, nothing ever truly simulated the experience of driving in real life. Additionally, I've always enjoyed driving at night. Nothing ever beats the feeling of driving on a long road at night. I built this game to replicate it. The thing is, when I was making this game, I realized that this experience is very dangerous, especially when you go too fast. This game serves as a great placeholder to enjoy the experience while also understanding the high risk of doing it in real life. 
 
+# How it works
+This project uses Three.js for 3d rendering along with rapier for physics. I simulate car suspension with 4 raycasts at each of the wheels position, calculating how compressed each ray is, then apply an opposite force. When on the ground and driving, forward force is applied and decreases as the car gets faster, emulating acceleration. When pressing a turning key, the turning amount eases towards the max target steering. To actually turn the car, the car's front wheels aren't actually turning, but rather the effect of turning wheels is simulated mathimatically, along with the grip. As for the sound affects, they are relatively simple. A background sound plays 24/7 along with an engine sound, and the acceleration sound's volume is increased and decreased based on user key input. Playback speed is also increased based on speed to achieve a more realistic effect.
+
 # AI Policy
 AI is just a tool. It can be superb for troubleshooting and understanding complex physics, but completely AI written code destroys the essence and art of programming. While making this project, I did not overuse AI and commented specific parts that AI assisted with.
