@@ -4,11 +4,11 @@ Night Racer is a fun, endless racing game where the user can enjoy speeding arou
 ![img](screenshot.png)
 
 # How to play
-W key - accelerate
-A key - turn left
-S key - slow down and reverse
-D key - turn right
-Mouse movement - control the camera angle / turn the player's head
+W key - accelerate<br>
+A key - turn left<br>
+S key - slow down and reverse<br>
+D key - turn right<br>
+Mouse movement - control the camera angle / turn the player's head<br>
 Stay on the road and have fun!
 
 # Why I made this
